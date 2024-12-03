@@ -2,16 +2,17 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import CallbackQuery, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 API_TOKEN = ''
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
-keyboard = ReplyKeyboardMarkup()
+keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
 calculate_button = KeyboardButton(text="Рассчитать")
 info_button = KeyboardButton(text="Информация")
 keyboard.add(calculate_button, info_button)
+
 
 class UserState(StatesGroup):
     age = State()
@@ -30,13 +31,13 @@ async def inform(message):
 
 
 @dp.message_handler(text='Рассчитать')
-async def set_age(callback_query: CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, 'Введите свой возраст:')
+async def set_age(message):
+    await message.answer('Введите свой возраст:')
     await UserState.age.set()
 
 
 @dp.message_handler(state=UserState.age)
-async def set_growth(message: types.Message, state: FSMContext):
+async def set_growth(message, state):
     async with state.proxy() as data:
         data['age'] = int(message.text)
     await message.answer('Введите свой рост (в см):')
@@ -44,7 +45,7 @@ async def set_growth(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state=UserState.growth)
-async def set_weight(message: types.Message, state: FSMContext):
+async def set_weight(message, state):
     async with state.proxy() as data:
         data['growth'] = float(message.text)
     await message.answer('Введите свой вес (в кг):')

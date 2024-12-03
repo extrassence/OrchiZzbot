@@ -2,16 +2,18 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
-API_TOKEN = ''
+API_TOKEN = '7275235531:AAEEdsoH0kqHb8t24rkxCeGb5uCqkCLAW6Q'
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
+
 keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
 calculate_button = KeyboardButton(text="Рассчитать")
 info_button = KeyboardButton(text="Информация")
 keyboard.add(calculate_button, info_button)
+
 inline_keyboard = InlineKeyboardMarkup()
 button_calculate = InlineKeyboardButton(text="Рассчитать норму калорий", callback_data="calories")
 button_formulas = InlineKeyboardButton(text="Формулы расчёта", callback_data="formulas")
@@ -35,28 +37,26 @@ async def inform(message):
 
 
 @dp.message_handler(text='Рассчитать')
-async def main_menu(message: types.Message):
+async def main_menu(message):
     await message.answer("Выберите опцию:", reply_markup=inline_keyboard)
 
 
 @dp.callback_query_handler(text="formulas")
-async def get_formulas(query: CallbackQuery):
-    await bot.send_message(query.from_user.id, "Формула Миффлина-Сан Жеора:\n"
-                                               "Для мужчин: (10 × вес (кг) + 6.25 × рост (см) – 5 × возраст (лет) + "
-                                               "5) × А\n"
-                                               "Для женщин: (10 × вес (кг) + 6.25 × рост (см) – 5 × возраст (лет) – "
-                                               "161) × А\n"
-                                               "где А — коэффициент активности.")
+async def get_formulas(query):
+    await query.message.answer("""Формула Миффлина-Сан Жеора:
+Для мужчин: (10 × вес (кг) + 6.25 × рост (см) – 5 × возраст (лет) + 5) × А
+Для женщин: (10 × вес (кг) + 6.25 × рост (см) – 5 × возраст (лет) – 161) × А
+где А — коэффициент активности.""")
 
 
 @dp.callback_query_handler(text="calories")
-async def set_age(query: CallbackQuery):
-    await bot.send_message(query.from_user.id, 'Введите свой возраст:')
+async def set_age(query):
+    await query.message.answer('Введите свой возраст:')
     await UserState.age.set()
 
 
 @dp.message_handler(state=UserState.age)
-async def set_growth(message: types.Message, state: FSMContext):
+async def set_growth(message, state):
     async with state.proxy() as data:
         data['age'] = int(message.text)
     await message.answer('Введите свой рост (в см):')
@@ -64,7 +64,7 @@ async def set_growth(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state=UserState.growth)
-async def set_weight(message: types.Message, state: FSMContext):
+async def set_weight(message, state):
     async with state.proxy() as data:
         data['growth'] = float(message.text)
     await message.answer('Введите свой вес (в кг):')
@@ -72,7 +72,7 @@ async def set_weight(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state=UserState.weight)
-async def send_calories(message: types.Message, state: FSMContext):
+async def send_calories(message, state):
     async with state.proxy() as data:
         data['weight'] = float(message.text)
     user_data = await state.get_data()
